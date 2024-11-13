@@ -1826,7 +1826,7 @@ msgstr ""
 #: model:ir.module.module,description:base.module_l10n_tr_reports
 msgid ""
 "\n"
-"Accounting reports for Turkey\n"
+"Accounting reports for Türkiye\n"
 msgstr ""
 "\n"
 "Buchhaltungsberichte für die Türkei\n"
@@ -2119,7 +2119,7 @@ msgstr ""
 #: model:ir.module.module,description:base.module_l10n_fr_facturx_chorus_pro
 msgid ""
 "\n"
-"Add supports to fill three optional fields used when using Chorus Pro, especially when invoicing public services.\n"
+"Add support to fill three optional fields used when using Chorus Pro, especially when invoicing public services.\n"
 msgstr ""
 "\n"
 "Fügen Sie Unterstützung zum Ausfüllen von drei optionalen Feldern, die bei der Verwendung von Chorus Pro verwendet werden, hinzu, insbesondere bei der Rechnungsstellung für öffentliche Dienstleistungen.\n"
@@ -4256,12 +4256,14 @@ msgid ""
 "=========================================================================================\n"
 "\n"
 "German accounting chart and localization.\n"
+"By default, the audit trail is enabled for GoBD compliance.\n"
 msgstr ""
 "\n"
-"Dieses Modul beinhaltet einen deutschen Kontenrahmen basierend auf dem SKR03 oder SKR04.\n"
+"Dieses  Modul beinhaltet einen deutschen Kontenrahmen basierend auf dem SKR03 oder SKR04.\n"
 "=========================================================================================\n"
 "\n"
 "Deutscher Kontenplan und Lokalisierung.\n"
+"Standardmäßig ist der Audit Trail (Prüfpfad) für die Einhaltung der GoBD aktiviert.\n"
 
 #. module: base
 #: model:ir.module.module,description:base.module_l10n_be_disallowed_expenses
@@ -11480,7 +11482,7 @@ msgid ""
 "    * Defines the default taxes\n"
 "    * Defines default tax report\n"
 "\n"
-"This was done in collaboration with Broadmax Partner in Turkey.\n"
+"This was done in collaboration with Broadmax Partner in Türkiye.\n"
 msgstr ""
 "\n"
 "Türkischer Kontenplan\n"
@@ -36350,6 +36352,17 @@ msgstr ""
 "übereinstimmen."
 
 #. module: base
+#. odoo-python
+#: code:addons/base/models/res_users.py:0
+#, python-format
+msgid ""
+"The action \"%s\" cannot be set as the home action because it requires a "
+"record to be selected beforehand."
+msgstr ""
+"Die Aktion „%s“ kann nicht als Startaktion festgelegt werden, da vorher ein "
+"Datensatz ausgewählt werden muss."
+
+#. module: base
 #: model:ir.model.fields,help:base.field_res_country__code
 #: model:ir.model.fields,help:base.field_res_partner__country_code
 #: model:ir.model.fields,help:base.field_res_users__country_code
@@ -38211,17 +38224,17 @@ msgstr "Tunesien - Buchhaltungsberichte"
 
 #. module: base
 #: model:res.country,name:base.tr
-msgid "Turkey"
+msgid "Türkiye"
 msgstr "Türkei"
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_l10n_tr
-msgid "Turkey - Accounting"
+msgid "Türkiye - Accounting"
 msgstr "Türkei - Buchhaltung"
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_l10n_tr_reports
-msgid "Turkey - Accounting Reports"
+msgid "Türkiye - Accounting Reports"
 msgstr "Türkei - Buchhaltungsberichte"
 
 #. module: base

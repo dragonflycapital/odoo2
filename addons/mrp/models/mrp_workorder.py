@@ -147,25 +147,21 @@ class MrpWorkorder(models.Model):
 
     @api.depends('production_availability', 'blocked_by_workorder_ids.state')
     def _compute_state(self):
-        # Force to compute the production_availability right away.
-        # It is a trick to force that the state of workorder is computed at the end of the
-        # cyclic depends with the mo.state, mo.reservation_state and wo.state and avoid recursion error
-        self.mapped('production_availability')
         for workorder in self:
-            if workorder.state == 'pending':
-                if all([wo.state in ('done', 'cancel') for wo in workorder.blocked_by_workorder_ids]):
-                    workorder.state = 'ready' if workorder.production_availability == 'assigned' else 'waiting'
-                    continue
-            if workorder.state not in ('waiting', 'ready'):
+            if workorder.state not in ('pending', 'waiting', 'ready'):
                 continue
-            if not all([wo.state in ('done', 'cancel') for wo in workorder.blocked_by_workorder_ids]):
+            no_recursion_blocked_by_workorder_ids = workorder.blocked_by_workorder_ids.with_context(no_recursion=True)
+            if workorder.production_availability == 'assigned':
+                if all(wo.state in ('done', 'cancel') for wo in no_recursion_blocked_by_workorder_ids):
+                    workorder.state = 'ready'
+                else:
+                    workorder.state = 'pending'
+                continue
+            if self._context.get('no_recursion'):
+                continue
+            if no_recursion_blocked_by_workorder_ids and not all(wo.state in ('done', 'cancel') for wo in no_recursion_blocked_by_workorder_ids):
                 workorder.state = 'pending'
-                continue
-            if workorder.production_availability not in ('waiting', 'confirmed', 'assigned'):
-                continue
-            if workorder.production_availability == 'assigned' and workorder.state == 'waiting':
-                workorder.state = 'ready'
-            elif workorder.production_availability != 'assigned' and workorder.state == 'ready':
+            else:
                 workorder.state = 'waiting'
 
     @api.depends('production_state', 'date_start', 'date_finished')
@@ -296,10 +292,13 @@ class MrpWorkorder(models.Model):
             rounding = order.production_id.product_uom_id.rounding
             order.is_produced = float_compare(order.qty_produced, order.production_id.product_qty, precision_rounding=rounding) >= 0
 
-    @api.depends('operation_id', 'workcenter_id', 'qty_production')
+    @api.depends('operation_id', 'workcenter_id', 'qty_producing', 'qty_production')
     def _compute_duration_expected(self):
         for workorder in self:
-            if workorder.state not in ['done', 'cancel']:
+            # Recompute the duration expected if the qty_producing has been changed:
+            # compare with the origin record if it happens during an onchange
+            if workorder.state not in ['done', 'cancel'] and (workorder.qty_producing != workorder.qty_production
+                or (workorder._origin != workorder and workorder._origin.qty_producing and workorder.qty_producing != workorder._origin.qty_producing)):
                 workorder.duration_expected = workorder._get_duration_expected()
 
     @api.depends('time_ids.duration', 'qty_produced')
@@ -747,8 +746,12 @@ class MrpWorkorder(models.Model):
             duration_expected_working = (self.duration_expected - self.workcenter_id.time_start - self.workcenter_id.time_stop) * self.workcenter_id.time_efficiency / 100.0
             if duration_expected_working < 0:
                 duration_expected_working = 0
-            return self.workcenter_id._get_expected_duration(self.product_id) + duration_expected_working * ratio * 100.0 / self.workcenter_id.time_efficiency
-        qty_production = self.production_id.product_uom_id._compute_quantity(self.qty_production, self.production_id.product_id.uom_id)
+            if self.qty_producing not in (0, self.qty_production, self._origin.qty_producing):
+                qty_ratio = self.qty_producing / (self._origin.qty_producing or self.qty_production)
+            else:
+                qty_ratio = 1
+            return self.workcenter_id._get_expected_duration(self.product_id) + duration_expected_working * qty_ratio * ratio * 100.0 / self.workcenter_id.time_efficiency
+        qty_production = self.production_id.product_uom_id._compute_quantity(self.qty_producing or self.qty_production, self.production_id.product_id.uom_id)
         capacity = self.workcenter_id._get_capacity(self.product_id)
         cycle_number = float_round(qty_production / capacity, precision_digits=0, rounding_method='UP')
         if alternative_workcenter:

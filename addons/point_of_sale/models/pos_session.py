@@ -240,18 +240,6 @@ class PosSession(models.Model):
             sessions = super().create(vals_list)
         sessions.action_pos_session_open()
 
-        date_string = fields.Date.today().isoformat()
-        ir_sequence = self.env['ir.sequence'].sudo().search([('code', '=', f'pos.order_{date_string}')])
-        if not ir_sequence:
-            self.env['ir.sequence'].sudo().create({
-                'name': _("PoS Order"),
-                'padding': 0,
-                'code': f'pos.order_{date_string}',
-                'number_next': 1,
-                'number_increment': 1,
-                'company_id': self.env.company.id,
-            })
-
         return sessions
 
     def unlink(self):
@@ -830,9 +818,8 @@ class PosSession(models.Model):
                         .filtered(lambda m: not bool(m.origin_returned_move_id and sum(m.stock_valuation_layer_ids.mapped('quantity')) >= 0))\
                         .mapped('stock_valuation_layer_ids')
                     for move in stock_moves_batch.with_context(candidates_prefetch_ids=candidates._prefetch_ids):
-                        fpos = order_line.order_id.fiscal_position_id
-                        exp_key = fpos.map_account(move.product_id._get_product_accounts()['expense'])
-                        out_key = fpos.map_account(move.product_id.categ_id.property_stock_account_output_categ_id)
+                        exp_key = move.product_id._get_product_accounts()['expense']
+                        out_key = move.product_id.categ_id.property_stock_account_output_categ_id
                         signed_product_qty = move.product_qty
                         if move._is_in():
                             signed_product_qty *= -1
@@ -1290,6 +1277,7 @@ class PosSession(models.Model):
             'tax_base_amount': abs(base_amount_converted),
             'tax_repartition_line_id': repartition_line_id,
             'tax_tag_ids': [(6, 0, tag_ids)],
+            'display_type': 'tax',
         }
         return self._debit_amounts(partial_args, amount, amount_converted)
 
@@ -1745,6 +1733,7 @@ class PosSession(models.Model):
             'pos.combo',
             'pos.combo.line',
             'product.packaging',
+            'product.tag',
             'account.cash.rounding',
             'pos.payment.method',
             'account.fiscal.position',
@@ -1841,6 +1830,12 @@ class PosSession(models.Model):
 
     def _get_pos_ui_res_lang(self, params):
         return self.env['res.lang'].search_read(**params['search_params'])
+
+    def _get_pos_ui_product_tag(self, params):
+        return self.env['product.tag'].search_read(**params['search_params'])
+
+    def _loader_params_product_tag(self):
+        return {'search_params': {'domain': [], 'fields': []}}
 
     def _loader_params_account_tax(self):
         return {
@@ -2071,7 +2066,7 @@ class PosSession(models.Model):
                 'fields': [
                     'display_name', 'lst_price', 'standard_price', 'categ_id', 'pos_categ_ids', 'taxes_id', 'barcode',
                     'default_code', 'to_weight', 'uom_id', 'description_sale', 'description', 'product_tmpl_id', 'tracking',
-                    'write_date', 'available_in_pos', 'attribute_line_ids', 'active', 'image_128', 'combo_ids',
+                    'write_date', 'available_in_pos', 'attribute_line_ids', 'active', 'image_128', 'combo_ids', 'product_tag_ids',
                 ],
                 'order': 'sequence,default_code,name',
             },
